@@ -61,6 +61,22 @@ public class DB {
         return list;
     }
 
+    public List<String> loadOnlyTitle() {
+        List<String> list = new ArrayList<>();
+        Cursor cursor = db.query("LocalMusic", null, null, null, null, null, null);
+        if (cursor.moveToFirst()) {
+            do {
+                String aMusic = "";
+                aMusic = cursor.getString(cursor.getColumnIndex("music_title"));
+                list.add(aMusic);
+            } while (cursor.moveToNext());
+        }
+        if (cursor != null) {
+            cursor.close();
+        }
+        return list;
+    }
+
     public void clearLocalMusicInfo() {
         db.delete("LocalMusic", "id >= ?", new String[]{"0"});
     }

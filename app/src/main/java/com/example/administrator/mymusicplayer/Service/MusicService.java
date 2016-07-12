@@ -10,6 +10,7 @@ import android.media.browse.MediaBrowser;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
+import android.util.Log;
 
 import com.example.administrator.mymusicplayer.MyApplication;
 
@@ -17,7 +18,10 @@ import java.io.IOException;
 
 public class MusicService extends Service implements MediaPlayer.OnPreparedListener, AudioManager.OnAudioFocusChangeListener {
 
-    private MediaPlayer mMediaPlayer;
+    //如果不是static，退出应用后，mMediaplayer不再是还未停止线程中的mMediaPlayer.
+    private static MediaPlayer mMediaPlayer;
+
+    private boolean first;
 
     private ControlBinder mBinder = new ControlBinder();
 
@@ -67,6 +71,15 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         }
     }
 
+    public boolean isPlaying() {
+        if(mMediaPlayer != null && mMediaPlayer.isPlaying()) return true;
+        else return false;
+    }
+
+    public void playFirstMusic() {
+        first = true;
+    }
+
     public void stopMusic() {
         if (mMediaPlayer != null) mMediaPlayer.stop();
     }
@@ -97,7 +110,8 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
 
     public void onPrepared(MediaPlayer player) {
-        player.start();
+        if (first) first = false;
+        else player.start();
     }
 
     public void onAudioFocusChange(int focusChange) {

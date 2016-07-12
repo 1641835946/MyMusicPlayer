@@ -31,6 +31,13 @@ import com.example.administrator.mymusicplayer.R;
 import com.example.administrator.mymusicplayer.Service.MusicService;
 import com.example.administrator.mymusicplayer.db.DB;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,6 +63,7 @@ public class ListActivity extends Activity implements View.OnClickListener {
     private boolean mBound = false;
     private boolean playing = false;
     private List<MusicInfo> list;
+    private List<String> listOnlyTitle;
     private int whichPlay;
     private String which;
     private int maxNum;
@@ -79,10 +87,16 @@ public class ListActivity extends Activity implements View.OnClickListener {
         @Override
         public void onServiceConnected(ComponentName className,
                                        IBinder service) {
-            // We've bound to LocalService, cast the IBinder and get LocalService instance
             MusicService.ControlBinder binder = (MusicService.ControlBinder) service;
             musicService = binder.getService();
             mBound = true;
+            if (musicService !=null && !musicService.isPlaying()) {
+                if (!readData()) {
+                    musicService.playFirstMusic();
+                    playMusic(0);
+                }
+                Log.e("梁洁", "111111111");
+            }
         }
 
         @Override
@@ -91,11 +105,44 @@ public class ListActivity extends Activity implements View.OnClickListener {
         }
     };
 
+    private boolean readData() {
+        boolean re = false;
+        FileInputStream in = null;
+        BufferedReader reader = null;
+        MusicInfo musicInfo = new MusicInfo();
+        try {
+            in = openFileInput("playHistory");
+            reader = new BufferedReader(new InputStreamReader(in));
+            musicInfo.setTitle(reader.readLine());
+            musicInfo.setId(Long.parseLong(reader.readLine()));
+            for (int i = 0; i<list.size(); i++) {
+                if (list.get(i).getTitle().equals(musicInfo.getTitle()))
+                    if (list.get(i).getId() == (musicInfo.getId()))
+                        whichPlay = i;
+            }
+            musicService.playFirstMusic();
+            playMusic(whichPlay);
+            re = true;
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return re;
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_list);
+
         mDB = DB.getInstance(this);
         mRecyclerView = (RecyclerView)findViewById(R.id.music_recycler_view);
         //创建默认的线性LayoutManager
@@ -124,13 +171,17 @@ public class ListActivity extends Activity implements View.OnClickListener {
         intentFilter.addAction("android.media.AUDIO_BECOMING_NOISY");
         controlReceiver = new ControlReceiver();
         registerReceiver(controlReceiver, intentFilter);
+
+        Intent intent = new Intent(this, MusicService.class);
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
     }
+
 
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.start_pause:
-                if (playing) {
+                if (musicService.isPlaying()) {
                     musicService.pauseMusic();
                     playing = false;
                 }
@@ -140,12 +191,14 @@ public class ListActivity extends Activity implements View.OnClickListener {
                 }
                 break;
             case R.id.last:
+                if (!musicService.isPlaying()) playing = true;
                 if (whichPlay == 0) {
                     whichPlay = maxNum-1;
                     playMusic(whichPlay);
                 } else playMusic(--whichPlay);
                 break;
             case R.id.next:
+                if (!playing) playing = true;
                 if (whichPlay == (maxNum-1)) {
                     whichPlay = 0;
                     playMusic(whichPlay);
@@ -190,9 +243,10 @@ public class ListActivity extends Activity implements View.OnClickListener {
         }
     }
 
-
+//1.双击暂停问题
     private void init() {
         list = mDB.loadLocalMusicInfo();
+        listOnlyTitle = mDB.loadOnlyTitle();
         maxNum = list.size();
         mAdapter = new MusicInfoAdapter(this);
         mRecyclerView.setAdapter(mAdapter);
@@ -201,7 +255,7 @@ public class ListActivity extends Activity implements View.OnClickListener {
             public void onItemClick(View view, MusicInfo data) {
                 if (!playing) playing = true;
                 which = data.getTitle();
-                whichPlay = list.indexOf(data);
+                whichPlay = listOnlyTitle.indexOf(which);
                 musicName.setText(which);
                 totalTime.setText("time");
                 musicService.stopMusic();
@@ -216,7 +270,6 @@ public class ListActivity extends Activity implements View.OnClickListener {
 
     private void playMusic(int id) {
 
-        if (!playing) playing = true;
         Intent intent = new Intent(ListActivity.this, MusicService.class);
         intent.putExtra("id", list.get(id).getId());
         intent.putExtra("title", list.get(id).getTitle());
@@ -231,24 +284,12 @@ public class ListActivity extends Activity implements View.OnClickListener {
     }
 
     @Override
-    protected void onResume() {
-        Intent intent = new Intent(this, MusicService.class);
-        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-        super.onResume();
-    }
-
-    @Override
-    protected void onPause() {
+    protected void onDestroy() {
+        super.onDestroy();
         if (mBound) {
             unbindService(mConnection);
             mBound = false;
         }
-        super.onPause();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
         if (mMediaPlayer != null) {
             mMediaPlayer.release();
             mMediaPlayer = null;
@@ -258,6 +299,26 @@ public class ListActivity extends Activity implements View.OnClickListener {
             stopService(intent);
         }
         unregisterReceiver(controlReceiver);
+        Log.e("梁洁", "whichPlay is " + whichPlay);
+        FileOutputStream out = null;
+        BufferedWriter writer = null;
+        try {
+            out = openFileOutput("playHistory", Context.MODE_PRIVATE);
+            writer = new BufferedWriter(new OutputStreamWriter(out));
+            writer.write(list.get(whichPlay).getTitle());
+            writer.newLine();
+            writer.write(String.valueOf(list.get(whichPlay).getId()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (writer != null) {
+                    writer.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     class ControlReceiver extends BroadcastReceiver {
