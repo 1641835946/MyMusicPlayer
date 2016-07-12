@@ -21,12 +21,13 @@ public class MyService extends Service {
     public void onCreate() {
         super.onCreate();
         liangjie++;
-        Log.e("梁洁", "onCreate" + liangjie);
+        Log.e("梁洁", "MyService onCreate" + liangjie);
     }
 
     public int onStartCommand(Intent intent, int flags, int startId) {
         liangjie++;
-        Log.e("梁洁", "onStartCommand" + liangjie);
+        Log.e("梁洁", "MyService onStartCommand" + liangjie);
+        Log.e("梁洁", "MyService onStartCommand thread id is " + Thread.currentThread().getId());
         return super.onStartCommand(intent, flags, startId);
     }
 

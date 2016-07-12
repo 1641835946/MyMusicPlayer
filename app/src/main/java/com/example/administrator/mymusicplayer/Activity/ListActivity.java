@@ -28,6 +28,7 @@ import com.example.administrator.mymusicplayer.MusicInfo;
 import com.example.administrator.mymusicplayer.MusicInfoAdapter;
 import com.example.administrator.mymusicplayer.R;
 import com.example.administrator.mymusicplayer.Service.MusicService;
+import com.example.administrator.mymusicplayer.Service.MyIntentService;
 import com.example.administrator.mymusicplayer.Service.MyService;
 import com.example.administrator.mymusicplayer.db.DB;
 
@@ -145,12 +146,16 @@ public class ListActivity extends Activity implements View.OnClickListener {
             case R.id.last:
                 Intent liangjie = new Intent(this, MyService.class);
                 startService(liangjie);
+                Intent jjjjj= new Intent(this, MyIntentService.class);
+                startService(jjjjj);
                 --whichPlay;
                 playMusic(whichPlay);
                 break;
             case R.id.next:
                 Intent jieliangjie = new Intent(this, MyService.class);
                 stopService(jieliangjie);
+                Intent iiii= new Intent(this, MyIntentService.class);
+                stopService(iiii);
                 ++whichPlay;
                 playMusic(whichPlay);
                 break;
