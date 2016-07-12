@@ -22,14 +22,13 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.example.administrator.mymusicplayer.MusicInfo;
 import com.example.administrator.mymusicplayer.MusicInfoAdapter;
 import com.example.administrator.mymusicplayer.R;
 import com.example.administrator.mymusicplayer.Service.MusicService;
-import com.example.administrator.mymusicplayer.Service.MyIntentService;
-import com.example.administrator.mymusicplayer.Service.MyService;
 import com.example.administrator.mymusicplayer.db.DB;
 
 import java.util.ArrayList;
@@ -47,6 +46,7 @@ public class ListActivity extends Activity implements View.OnClickListener {
     private Button nextbtn;
     private TextView musicName;
     private TextView totalTime;
+    private SeekBar seekBar;
     private MusicInfoAdapter mAdapter;
     public static final int UPDATE_TEXT = 1;
     private MediaPlayer mMediaPlayer = new MediaPlayer();
@@ -58,6 +58,7 @@ public class ListActivity extends Activity implements View.OnClickListener {
     private List<MusicInfo> list;
     private int whichPlay;
     private String which;
+    private int maxNum;
 
     private Handler handler = new Handler() {
 
@@ -105,12 +106,6 @@ public class ListActivity extends Activity implements View.OnClickListener {
 
         init();
 
-//        Intent intent = new Intent(ListActivity.this, MusicService.class);
-//        intent.putExtra("id", list.get(0).getId());
-//        intent.putExtra("title", list.get(0).getTitle());
-//        startService(intent);
-//        musicService.pauseMusic();
-
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
         btn = (Button) findViewById(R.id.refresh_btn);
@@ -123,6 +118,7 @@ public class ListActivity extends Activity implements View.OnClickListener {
         nextbtn.setOnClickListener(this);
         musicName = (TextView) findViewById(R.id.music_name);
         totalTime = (TextView) findViewById(R.id.music_total_time);
+        seekBar = (SeekBar) findViewById(R.id.seek_bar);
 
         intentFilter = new IntentFilter();
         intentFilter.addAction("android.media.AUDIO_BECOMING_NOISY");
@@ -144,20 +140,16 @@ public class ListActivity extends Activity implements View.OnClickListener {
                 }
                 break;
             case R.id.last:
-                Intent liangjie = new Intent(this, MyService.class);
-                startService(liangjie);
-                Intent jjjjj= new Intent(this, MyIntentService.class);
-                startService(jjjjj);
-                --whichPlay;
-                playMusic(whichPlay);
+                if (whichPlay == 0) {
+                    whichPlay = maxNum-1;
+                    playMusic(whichPlay);
+                } else playMusic(--whichPlay);
                 break;
             case R.id.next:
-                Intent jieliangjie = new Intent(this, MyService.class);
-                stopService(jieliangjie);
-                Intent iiii= new Intent(this, MyIntentService.class);
-                stopService(iiii);
-                ++whichPlay;
-                playMusic(whichPlay);
+                if (whichPlay == (maxNum-1)) {
+                    whichPlay = 0;
+                    playMusic(whichPlay);
+                } else playMusic(++whichPlay);
                 break;
             case R.id.refresh_btn:
                 progressDialog = new ProgressDialog(ListActivity.this);
@@ -201,12 +193,13 @@ public class ListActivity extends Activity implements View.OnClickListener {
 
     private void init() {
         list = mDB.loadLocalMusicInfo();
+        maxNum = list.size();
         mAdapter = new MusicInfoAdapter(this);
         mRecyclerView.setAdapter(mAdapter);
         mAdapter.setOnItemClickListener(new MusicInfoAdapter.OnRecyclerViewItemClickListener() {
             @Override
             public void onItemClick(View view, MusicInfo data) {
-                playing = true;
+                if (!playing) playing = true;
                 which = data.getTitle();
                 whichPlay = list.indexOf(data);
                 musicName.setText(which);
@@ -222,9 +215,12 @@ public class ListActivity extends Activity implements View.OnClickListener {
     }
 
     private void playMusic(int id) {
+
+        if (!playing) playing = true;
         Intent intent = new Intent(ListActivity.this, MusicService.class);
         intent.putExtra("id", list.get(id).getId());
         intent.putExtra("title", list.get(id).getTitle());
+        musicName.setText(list.get(id).getTitle());
         startService(intent);
     }
 
@@ -256,6 +252,10 @@ public class ListActivity extends Activity implements View.OnClickListener {
         if (mMediaPlayer != null) {
             mMediaPlayer.release();
             mMediaPlayer = null;
+        }
+        if (!playing) {
+            Intent intent = new Intent(this, MusicService.class);
+            stopService(intent);
         }
         unregisterReceiver(controlReceiver);
     }

@@ -23,13 +23,6 @@
             android:name=".Service.MusicService"
             android:enabled="true"
             android:exported="true" />
-        <service
-            android:name=".Service.MyService"
-            android:enabled="true"
-            android:exported="true" />
-        <service
-            android:name=".Service.MyIntentService"
-            android:exported="false"></service>
     </application>
 
 </manifest>
