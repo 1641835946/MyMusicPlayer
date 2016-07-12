@@ -1,4 +1,4 @@
-package com.example.administrator.mymusicplayer.com.example.administrator.mymusicplayer.db;
+package com.example.administrator.mymusicplayer.db;
 
 import android.content.ContentValues;
 import android.content.Context;

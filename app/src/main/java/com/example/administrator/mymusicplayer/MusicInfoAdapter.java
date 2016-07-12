@@ -1,17 +1,13 @@
 package com.example.administrator.mymusicplayer;
 
-import android.app.Application;
 import android.content.Context;
-import android.media.MediaPlayer;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.example.administrator.mymusicplayer.com.example.administrator.mymusicplayer.db.DB;
-
-import org.w3c.dom.Text;
+import com.example.administrator.mymusicplayer.db.DB;
 
 import java.util.ArrayList;
 import java.util.List;
