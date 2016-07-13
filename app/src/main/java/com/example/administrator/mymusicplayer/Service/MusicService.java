@@ -1,5 +1,7 @@
 package com.example.administrator.mymusicplayer.Service;
 
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentUris;
 import android.content.Context;
@@ -12,11 +14,13 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.example.administrator.mymusicplayer.Activity.ListActivity;
 import com.example.administrator.mymusicplayer.MyApplication;
+import com.example.administrator.mymusicplayer.R;
 
 import java.io.IOException;
 
-public class MusicService extends Service implements MediaPlayer.OnPreparedListener, AudioManager.OnAudioFocusChangeListener {
+public class MusicService extends Service implements MediaPlayer.OnPreparedListener, AudioManager.OnAudioFocusChangeListener, MediaPlayer.OnErrorListener {
 
     //如果不是static，退出应用后，mMediaplayer不再是还未停止线程中的mMediaPlayer.
     private static MediaPlayer mMediaPlayer;
@@ -35,6 +39,21 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     }
 
     @Override
+    public void onCreate() {
+        super.onCreate();
+        PendingIntent pi = PendingIntent.getActivity(getApplicationContext(), 0,
+                new Intent(getApplicationContext(), ListActivity.class),
+                PendingIntent.FLAG_UPDATE_CURRENT);
+        Notification notification = new Notification();
+        notification.tickerText = "MusicPlayer";
+        notification.icon = R.drawable.notification_icon;
+        notification.flags |= Notification.FLAG_ONGOING_EVENT;
+        notification.setLatestEventInfo(getApplicationContext(), "MusicPlayer",
+                "Play music ", pi);
+        startForeground(1, notification);
+    }
+
+    @Override
     public IBinder onBind(Intent intent) {
         return mBinder;
     }
@@ -48,7 +67,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
                     if (mMediaPlayer != null) {
                         mMediaPlayer.release();
                     }
-
+                    Log.e("thread id is ", ""+Thread.currentThread().getId());
                     long id = intent.getLongExtra("id", 0);
                     Uri contentUri = ContentUris.withAppendedId(
                             android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id);
@@ -87,6 +106,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     private void playMusic(Uri contentUri) {
         mMediaPlayer = new MediaPlayer();
         mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        mMediaPlayer.setOnErrorListener(this);
         AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         int result = audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC,
                 AudioManager.AUDIOFOCUS_GAIN);
@@ -111,7 +131,11 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
     public void onPrepared(MediaPlayer player) {
         if (first) first = false;
-        else player.start();
+        else {
+            player.start();
+            Log.e("getduration", "" + mMediaPlayer.getDuration());
+            Log.e("getcurrentposition", "" + mMediaPlayer.getCurrentPosition());
+        }
     }
 
     public void onAudioFocusChange(int focusChange) {
@@ -146,4 +170,11 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         }
 
     }
+
+    @Override
+    public boolean onError(MediaPlayer mp, int what, int extra) {
+        mp.reset();
+        return true;
+    }
+
 }

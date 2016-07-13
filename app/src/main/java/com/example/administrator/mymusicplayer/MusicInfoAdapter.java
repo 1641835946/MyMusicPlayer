@@ -41,7 +41,7 @@ public class MusicInfoAdapter extends RecyclerView.Adapter<MusicInfoAdapter.View
     @Override
     public void onBindViewHolder(ViewHolder viewHolder, int position) {
         viewHolder.title.setText(datas.get(position).getTitle());
-        viewHolder.id.setText(String.valueOf(datas.get(position).getId()));
+//        viewHolder.id.setText(String.valueOf(datas.get(position).getId()));
         viewHolder.itemView.setTag(datas.get(position));
     }
     //获取数据的数量
@@ -57,7 +57,7 @@ public class MusicInfoAdapter extends RecyclerView.Adapter<MusicInfoAdapter.View
         public ViewHolder(View view){
             super(view);
             title = (TextView) view.findViewById(R.id.title);
-            id = (TextView) view.findViewById(R.id.id);
+//            id = (TextView) view.findViewById(R.id.id);
         }
     }
 

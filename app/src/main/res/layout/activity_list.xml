@@ -1,15 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#ffffcc">
 
-    <Button
-        android:id="@+id/refresh_btn"
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"/>
+        android:layout_height="50dp"
+        android:layout_alignParentTop="true"
+        android:background="#ff6666">
 
-    <include layout="@layout/control_playback"
+    </android.support.v7.widget.Toolbar>
+
+    <include
+        android:id="@+id/btn"
+        layout="@layout/control_playback"
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
         android:layout_alignParentBottom="true"
@@ -19,8 +25,21 @@
         android:id="@+id/music_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="60dp"
-        android:layout_marginBottom="60dp"
-        android:scrollbars="vertical"/>
+        android:layout_below="@id/toolbar"
+        android:layout_above="@id/btn"
+        android:scrollbars="vertical"
+        />
+
+    <ImageButton
+        android:id="@+id/refresh_btn"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/music"
+        android:layout_above="@+id/music_recycler_view"
+        android:layout_marginRight="5dp"
+        android:layout_marginBottom="5dp"
+        android:layout_marginTop="5dp"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
 
 </RelativeLayout>

@@ -19,9 +19,11 @@ import android.os.Message;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -47,7 +49,8 @@ public class ListActivity extends Activity implements View.OnClickListener {
     private DB mDB;
     private ProgressDialog progressDialog;
     private RecyclerView mRecyclerView;
-    private Button btn;
+    private Toolbar toolbar;
+    private ImageButton btn;
     private Button startbtn;
     private Button lastbtn;
     private Button nextbtn;
@@ -61,7 +64,6 @@ public class ListActivity extends Activity implements View.OnClickListener {
     private ControlReceiver controlReceiver;
     private MusicService musicService;
     private boolean mBound = false;
-    private boolean playing = false;
     private List<MusicInfo> list;
     private List<String> listOnlyTitle;
     private int whichPlay;
@@ -75,6 +77,7 @@ public class ListActivity extends Activity implements View.OnClickListener {
                 case UPDATE_TEXT:
                     progressDialog.dismiss();
                     init();
+                    start();
                     break;
                 default:
                     break;
@@ -90,13 +93,7 @@ public class ListActivity extends Activity implements View.OnClickListener {
             MusicService.ControlBinder binder = (MusicService.ControlBinder) service;
             musicService = binder.getService();
             mBound = true;
-            if (musicService !=null && !musicService.isPlaying()) {
-                if (!readData()) {
-                    musicService.playFirstMusic();
-                    playMusic(0);
-                }
-                Log.e("梁洁", "111111111");
-            }
+            start();
         }
 
         @Override
@@ -104,6 +101,16 @@ public class ListActivity extends Activity implements View.OnClickListener {
             mBound = false;
         }
     };
+
+    private void start() {//准备但还未播放，第一首歌或历史纪录
+        if (musicService !=null && !musicService.isPlaying()) {
+            if (!readData()) {
+                musicService.playFirstMusic();
+                playMusic(0);
+            }
+            startbtn.setBackgroundResource(R.drawable.play);
+        }
+    }
 
     private boolean readData() {
         boolean re = false;
@@ -155,7 +162,9 @@ public class ListActivity extends Activity implements View.OnClickListener {
 
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
-        btn = (Button) findViewById(R.id.refresh_btn);
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar.setTitle(R.string.app_name);
+        btn = (ImageButton) findViewById(R.id.refresh_btn);
         btn.setOnClickListener(this);
         startbtn = (Button) findViewById(R.id.start_pause);
         startbtn.setOnClickListener(this);
@@ -183,67 +192,69 @@ public class ListActivity extends Activity implements View.OnClickListener {
             case R.id.start_pause:
                 if (musicService.isPlaying()) {
                     musicService.pauseMusic();
-                    playing = false;
+                    startbtn.setBackgroundResource(R.drawable.play);
                 }
                 else {
                     musicService.startMusic();
-                    playing = true;
+                    startbtn.setBackgroundResource(R.drawable.pause);
                 }
                 break;
             case R.id.last:
-                if (!musicService.isPlaying()) playing = true;
                 if (whichPlay == 0) {
                     whichPlay = maxNum-1;
                     playMusic(whichPlay);
                 } else playMusic(--whichPlay);
+                startbtn.setBackgroundResource(R.drawable.pause);
                 break;
             case R.id.next:
-                if (!playing) playing = true;
                 if (whichPlay == (maxNum-1)) {
                     whichPlay = 0;
                     playMusic(whichPlay);
                 } else playMusic(++whichPlay);
+                startbtn.setBackgroundResource(R.drawable.pause);
                 break;
             case R.id.refresh_btn:
-                progressDialog = new ProgressDialog(ListActivity.this);
-                progressDialog.setTitle("正在搜索，请稍等");
-                progressDialog.setMessage("Loading...");
-                progressDialog.setCancelable(false);
-                progressDialog.show();
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (!mDB.loadLocalMusicInfo().isEmpty()) {
-                            mDB.clearLocalMusicInfo();
-                        }
-                        ContentResolver contentResolver = getContentResolver();
-                        Uri uri = android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-                        Cursor cursor = contentResolver.query(uri, null, null, null, null);
-                        if (cursor == null) {
-                            // query failed, handle error.
-                        } else if (!cursor.moveToFirst()) {
-                            // no media on the device
-                        } else {
-                            int titleColumn = cursor.getColumnIndex(android.provider.MediaStore.Audio.Media.TITLE);
-                            int idColumn = cursor.getColumnIndex(android.provider.MediaStore.Audio.Media._ID);
-                            do {
-                                MusicInfo info = new MusicInfo();
-                                info.setId(cursor.getLong(idColumn));
-                                info.setTitle(cursor.getString(titleColumn));
-                                infoList.add(info);
-                            } while (cursor.moveToNext());
-                        }
-                        mDB.saveLocalMusicInfo(infoList);
-                        Message message = new Message();
-                        message.what = UPDATE_TEXT;
-                        handler.sendMessage(message);
-                    }
-                }).start();
+                refresh();
                 break;
         }
     }
 
-//1.双击暂停问题
+    private void refresh() {
+        progressDialog = new ProgressDialog(ListActivity.this);
+        progressDialog.setTitle("正在搜索，请稍等");
+        progressDialog.setMessage("Loading...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (!mDB.loadLocalMusicInfo().isEmpty()) {
+                    mDB.clearLocalMusicInfo();
+                }
+                ContentResolver contentResolver = getContentResolver();
+                Uri uri = android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+                Cursor cursor = contentResolver.query(uri, null, null, null, null);
+                if (cursor == null) {
+                    // query failed, handle error.
+                } else if (!cursor.moveToFirst()) {
+                    // no media on the device
+                } else {
+                    int titleColumn = cursor.getColumnIndex(android.provider.MediaStore.Audio.Media.TITLE);
+                    int idColumn = cursor.getColumnIndex(android.provider.MediaStore.Audio.Media._ID);
+                    do {
+                        MusicInfo info = new MusicInfo();
+                        info.setId(cursor.getLong(idColumn));
+                        info.setTitle(cursor.getString(titleColumn));
+                        infoList.add(info);
+                    } while (cursor.moveToNext());
+                }
+                mDB.saveLocalMusicInfo(infoList);
+                Message message = new Message();
+                message.what = UPDATE_TEXT;
+                handler.sendMessage(message);
+            }
+        }).start();
+    }
     private void init() {
         list = mDB.loadLocalMusicInfo();
         listOnlyTitle = mDB.loadOnlyTitle();
@@ -253,7 +264,7 @@ public class ListActivity extends Activity implements View.OnClickListener {
         mAdapter.setOnItemClickListener(new MusicInfoAdapter.OnRecyclerViewItemClickListener() {
             @Override
             public void onItemClick(View view, MusicInfo data) {
-                if (!playing) playing = true;
+                startbtn.setBackgroundResource(R.drawable.pause);
                 which = data.getTitle();
                 whichPlay = listOnlyTitle.indexOf(which);
                 musicName.setText(which);
@@ -280,7 +291,6 @@ public class ListActivity extends Activity implements View.OnClickListener {
     private void stopMusicService() {
         Intent intent = new Intent(ListActivity.this, MusicService.class);
         stopService(intent);
-        playing = false;
     }
 
     @Override
@@ -294,12 +304,11 @@ public class ListActivity extends Activity implements View.OnClickListener {
             mMediaPlayer.release();
             mMediaPlayer = null;
         }
-        if (!playing) {
+        if (!musicService.isPlaying()) {
             Intent intent = new Intent(this, MusicService.class);
             stopService(intent);
         }
         unregisterReceiver(controlReceiver);
-        Log.e("梁洁", "whichPlay is " + whichPlay);
         FileOutputStream out = null;
         BufferedWriter writer = null;
         try {
