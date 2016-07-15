@@ -78,6 +78,11 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         return super.onStartCommand(intent, flags, startId);
     }
 
+    public void seekToMusic(int to) {
+        if (mMediaPlayer != null) {
+            mMediaPlayer.seekTo(to);
+        }
+    }
     public void pauseMusic() {
         if (mMediaPlayer !=null && mMediaPlayer.isPlaying()) {
             mMediaPlayer.pause();
@@ -128,14 +133,23 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         }
     }
 
-
     public void onPrepared(MediaPlayer player) {
-        if (first) first = false;
+        if (first) {
+            first = false;
+        }
         else {
             player.start();
-            Log.e("getduration", "" + mMediaPlayer.getDuration());
-            Log.e("getcurrentposition", "" + mMediaPlayer.getCurrentPosition());
         }
+    }
+
+    public int getCurrentPosition() {
+        int back = 0;
+        try {
+            back = mMediaPlayer.getCurrentPosition();
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+        }
+        return back;
     }
 
     public void onAudioFocusChange(int focusChange) {

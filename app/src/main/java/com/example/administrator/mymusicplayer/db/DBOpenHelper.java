@@ -12,6 +12,9 @@ public class DBOpenHelper extends SQLiteOpenHelper{
     public static final String CREATE_LOCALMUSIC = "create table LocalMusic (" +
             "id integer primary key autoincrement, " +
             "music_title text, " +
+            "music_artist text, " +
+            "music_size integer, " +
+            "music_duration integer, " +
             "music_id text)";
 
     public DBOpenHelper(Context context, String name, SQLiteDatabase.CursorFactory factory, int version) {

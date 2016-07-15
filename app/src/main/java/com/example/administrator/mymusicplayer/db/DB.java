@@ -39,6 +39,9 @@ public class DB {
                 values.clear();
                 values.put("music_id", infoList.get(i).getId());
                 values.put("music_title", infoList.get(i).getTitle());
+                values.put("music_size", infoList.get(i).getSize());
+                values.put("music_duration", infoList.get(i).getDuration());
+                values.put("music_artist", infoList.get(i).getArtist());
                 db.insert("LocalMusic", null, values);
             }
         }
@@ -52,6 +55,9 @@ public class DB {
                 MusicInfo aMusic = new MusicInfo();
                 aMusic.setId(cursor.getInt(cursor.getColumnIndex("music_id")));
                 aMusic.setTitle(cursor.getString(cursor.getColumnIndex("music_title")));
+                aMusic.setArtist(cursor.getString(cursor.getColumnIndex("music_artist")));
+                aMusic.setDuration(cursor.getInt(cursor.getColumnIndex("music_duration")));
+                aMusic.setSize(cursor.getInt(cursor.getColumnIndex("music_size")));
                 list.add(aMusic);
             } while (cursor.moveToNext());
         }
